@@ -1,0 +1,14 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/github", {
+      "assets": [
+        {"path": "dist/dccli-linux-amd64", "label": "dccli-linux-amd64"},
+        {"path": "dist/dccli-windows-amd64.exe", "label": "dccli-windows-amd64.exe"},
+        {"path": "dist/dccli-darwin-amd64", "label": "dccli-darwin-amd64"}
+      ]
+    }]
+  ]
+}

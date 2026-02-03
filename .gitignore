@@ -1,0 +1,40 @@
+# Binaries and executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Project specific binaries
+dccli.exe
+/dccli
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency directories (uncomment if you want to vendor dependencies)
+# vendor/
+
+# IDE and Editor configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.iml
+
+# OS specific
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Audio recordings and temporary media files
+*.ogg
+*.mp3
+*.wav
+
+# Logs
+*.log
