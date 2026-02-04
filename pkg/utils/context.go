@@ -28,11 +28,15 @@ type CLIContext struct {
 	BotConfig    *cfg.BotConfig
 	Client       *discord.DiscordClient
 	Token        string // Direct token override
+	Quiet        bool   // Suppress status messages
 }
 
 // NewCLIContext creates a CLIContext from urfave/cli context
 func NewCLIContext(c *cli.Command) (*CLIContext, error) {
 	ctx := &CLIContext{}
+
+	// Parse quiet flag
+	ctx.Quiet = c.Bool("quiet")
 
 	// Parse output format
 	formatStr := c.String("output")

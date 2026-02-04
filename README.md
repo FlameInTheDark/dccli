@@ -4,16 +4,23 @@ A command-line interface for managing Discord bots and guilds.
 
 ## Installation
 
+### Binary (One-liner)
+
+**Linux / macOS**:
 ```bash
-go install github.com/FlameInTheDark/dccli/cmd/dccli@latest
+curl -sL https://github.com/FlameInTheDark/dccli/releases/latest/download/dccli-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64 -o dccli && chmod +x dccli && sudo mv dccli /usr/local/bin/
 ```
 
-Or build from source:
+**Windows (PowerShell)**:
+```powershell
+iwr -useb https://github.com/FlameInTheDark/dccli/releases/latest/download/dccli-windows-amd64.exe -OutFile dccli.exe
+```
 
+### From Source
+
+Using Go:
 ```bash
-git clone https://github.com/FlameInTheDark/dccli.git
-cd dccli
-go build -o dccli ./cmd/dccli
+go install github.com/FlameInTheDark/dccli/cmd/dccli@latest
 ```
 
 ## Quick Start

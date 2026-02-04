@@ -69,6 +69,11 @@ func main() {
 				Usage:   "Bot token (overrides config entirely)",
 				Sources: cli.EnvVars("DCLI_TOKEN"),
 			},
+			&cli.BoolFlag{
+				Name:    "quiet",
+				Aliases: []string{"q"},
+				Usage:   "Suppress status messages",
+			},
 		},
 		Commands: []*cli.Command{
 			commands.ApplicationsCommands(),

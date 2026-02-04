@@ -3,6 +3,9 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
+    ["@semantic-release/exec", {
+      "prepareCmd": "mkdir -p dist && GOOS=linux GOARCH=amd64 go build -ldflags=\"-s -w -X main.build=${nextRelease.version}\" -o dist/dccli-linux-amd64 ./cmd/dccli && GOOS=windows GOARCH=amd64 go build -ldflags=\"-s -w -X main.build=${nextRelease.version}\" -o dist/dccli-windows-amd64.exe ./cmd/dccli && GOOS=darwin GOARCH=amd64 go build -ldflags=\"-s -w -X main.build=${nextRelease.version}\" -o dist/dccli-darwin-amd64 ./cmd/dccli"
+    }],
     ["@semantic-release/github", {
       "assets": [
         {"path": "dist/dccli-linux-amd64", "label": "dccli-linux-amd64"},

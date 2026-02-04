@@ -50,6 +50,11 @@ func MessagesListenCommand() *cli.Command {
 				Aliases: []string{"f"},
 				Usage:   "Output format: text, json",
 			},
+			&cli.IntFlag{
+				Name:    "limit",
+				Aliases: []string{"l"},
+				Usage:   "Stop listening after receiving N messages",
+			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
 			if c.NArg() < 1 {
@@ -58,6 +63,7 @@ func MessagesListenCommand() *cli.Command {
 			channelID := c.Args().First()
 			onlyMentions := c.Bool("mentions")
 			filterUsers := c.StringSlice("users")
+			limit := c.Int("limit")
 
 			cliCtx, err := utils.NewCLIContext(c)
 			if err != nil {
@@ -79,7 +85,13 @@ func MessagesListenCommand() *cli.Command {
 
 			output := cliCtx.GetOutputManager()
 
-			fmt.Printf("Listening for messages in channel %s... Press Ctrl+C to stop.\n", channelID)
+			if !cliCtx.Quiet {
+				if limit > 0 {
+					fmt.Printf("Listening for %d messages in channel %s... Press Ctrl+C to stop.\n", limit, channelID)
+				} else {
+					fmt.Printf("Listening for messages in channel %s... Press Ctrl+C to stop.\n", channelID)
+				}
+			}
 
 			type ListenMessageOutput struct {
 				Username    string   `json:"username"`
@@ -87,6 +99,9 @@ func MessagesListenCommand() *cli.Command {
 				Content     string   `json:"content"`
 				Attachments []string `json:"attachments,omitempty"`
 			}
+
+			done := make(chan struct{})
+			count := 0
 
 			cliCtx.Client.Session().AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 				if m.ChannelID != channelID {
@@ -133,19 +148,36 @@ func MessagesListenCommand() *cli.Command {
 					if err == nil {
 						fmt.Println(string(data))
 					}
-					return
+				} else {
+					fmt.Printf("%s (%s): %s\n", m.Author.Username, m.Author.ID, m.Content)
+					for _, att := range m.Attachments {
+						fmt.Printf("Attachment: %s\n", att.URL)
+					}
 				}
 
-				fmt.Printf("%s (%s): %s\n", m.Author.Username, m.Author.ID, m.Content)
-				for _, att := range m.Attachments {
-					fmt.Printf("Attachment: %s\n", att.URL)
+				if limit > 0 {
+					count++
+					if count >= limit {
+						// Use a non-blocking send or close check to avoid panic if called multiple times rapidly
+						select {
+						case <-done:
+						default:
+							close(done)
+						}
+					}
 				}
 			})
 
-			// Wait for interrupt signal
+			// Wait for interrupt signal or limit reached
 			sc := make(chan os.Signal, 1)
 			signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-			<-sc
+
+			select {
+			case <-sc:
+				// Signal received
+			case <-done:
+				// Limit reached
+			}
 
 			return nil
 		},

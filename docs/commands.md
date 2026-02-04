@@ -7,6 +7,7 @@
 | `--output` | `-o` | Output format: `table`, `json`, `yaml` | `DCLI_OUTPUT` |
 | `--bot` | `-b` | Bot name to use | `DCLI_BOT` |
 | `--token` | `-t` | Bot token (overrides config) | `DCLI_TOKEN` |
+| `--quiet` | `-q` | Suppress status messages | |
 
 ---
 
@@ -207,12 +208,13 @@ dccli messages get <channel-id> <message-id>
 Listen for new messages in a channel.
 
 ```bash
-dccli messages listen <channel-id> [--mentions] [--users <id1,id2...>] [--format <text|json>]
+dccli messages listen <channel-id> [--mentions] [--users <id1,id2...>] [--limit <count>] [--format <text|json>]
 ```
 Prints new messages to stdout in the format: `UserName (user_id): message-text`.
 Attachments are listed as URLs.
 If `--mentions` is used, only messages that mention the bot will be displayed.
 If `--users` is used, only messages from the specified user IDs will be displayed.
+If `--limit` is used, the command will exit after receiving the specified number of matching messages.
 If `--format json` is used, messages will be printed as JSON objects.
 
 ### messages send
