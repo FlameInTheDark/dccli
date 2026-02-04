@@ -27,6 +27,7 @@ func MessagesCommand() *cli.Command {
 			MessagesDeleteCommand(),
 			MessagesListenCommand(),
 			MessagesReactionsCommand(),
+			MessagesValidateEmbedCommand(),
 		},
 	}
 }
@@ -116,9 +117,9 @@ func MessagesListenCommand() *cli.Command {
 							break
 						}
 					}
-					if !found {
-						return
-					}
+				if !found {
+					return
+				}
 				}
 
 				if onlyMentions {
@@ -129,9 +130,9 @@ func MessagesListenCommand() *cli.Command {
 							break
 						}
 					}
-					if !isMentioned {
-						return
-					}
+				if !isMentioned {
+					return
+				}
 				}
 
 				if output.GetFormat() == dprint.FormatJSON {
@@ -246,6 +247,10 @@ func MessagesSendCommand() *cli.Command {
 				Usage: "Message content",
 			},
 			&cli.StringFlag{
+				Name:  "embed",
+				Usage: "JSON string containing embed data",
+			},
+			&cli.StringFlag{
 				Name:  "embed-file",
 				Usage: "JSON file containing embed data",
 			},
@@ -266,9 +271,11 @@ func MessagesSendCommand() *cli.Command {
 			}
 			channelID := c.Args().First()
 			content := c.String("content")
+			embedJSON := c.String("embed")
+			embedFile := c.String("embed-file")
 
-			if content == "" && c.String("embed-file") == "" {
-				return utils.ValidationError("either --content or --embed-file is required")
+			if content == "" && embedJSON == "" && embedFile == "" {
+				return utils.ValidationError("either --content, --embed, or --embed-file is required")
 			}
 
 			msg := &discordgo.MessageSend{
@@ -276,8 +283,21 @@ func MessagesSendCommand() *cli.Command {
 				TTS:     c.Bool("tts"),
 			}
 
-			// Load embed from file if provided
-			if embedFile := c.String("embed-file"); embedFile != "" {
+			// Load embed from string or file
+			if embedJSON != "" {
+				if err := json.Unmarshal([]byte(embedJSON), &msg.Embed); err != nil {
+					// Try to reconstruct JSON if it was split by shell
+					if c.Args().Len() > 0 {
+						if _, ok := utils.ReconstructJSON(embedJSON, c.Args().Slice(), &msg.Embed); ok {
+							fmt.Println("Warning: JSON argument appeared to be split by shell. Successfully reconstructed.")
+						} else {
+							return utils.ValidationErrorf("failed to parse embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+						}
+					} else {
+						return utils.ValidationErrorf("failed to parse embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+					}
+				}
+			} else if embedFile != "" {
 				data, err := os.ReadFile(embedFile)
 				if err != nil {
 					return utils.ValidationErrorf("failed to read embed file: %w", err)
@@ -644,6 +664,67 @@ func ReactionsRemoveCommand() *cli.Command {
 					return err
 				}
 			}
+
+			return nil
+		},
+	}
+}
+
+// MessagesValidateEmbedCommand validates embed JSON
+func MessagesValidateEmbedCommand() *cli.Command {
+	return &cli.Command{
+		Name:  "validate-embed",
+		Usage: "Validate embed JSON structure",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "embed",
+				Usage: "JSON string containing embed data",
+			},
+			&cli.StringFlag{
+				Name:  "embed-file",
+				Usage: "JSON file containing embed data",
+			},
+		},
+		Action: func(ctx context.Context, c *cli.Command) error {
+			embedJSON := c.String("embed")
+			embedFile := c.String("embed-file")
+
+			if embedJSON == "" && embedFile == "" {
+				return utils.ValidationError("either --embed or --embed-file is required")
+			}
+
+			var embed discordgo.MessageEmbed
+			var data []byte
+			var err error
+
+			if embedJSON != "" {
+				data = []byte(embedJSON)
+			} else {
+				data, err = os.ReadFile(embedFile)
+				if err != nil {
+					return utils.ValidationErrorf("failed to read embed file: %w", err)
+				}
+			}
+
+			if err := json.Unmarshal(data, &embed); err != nil {
+				// Try to reconstruct JSON if it was split by shell
+				if embedJSON != "" && c.Args().Len() > 0 {
+					if _, ok := utils.ReconstructJSON(embedJSON, c.Args().Slice(), &embed); ok {
+						fmt.Println("Warning: JSON argument appeared to be split by shell. Successfully reconstructed.")
+						// Use the reconstructed embed for validation output
+					} else {
+						return utils.ValidationErrorf("invalid embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+					}
+				} else {
+					return utils.ValidationErrorf("invalid embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+				}
+			}
+
+			fmt.Println("Embed JSON is valid.")
+			
+			// Pretty print the parsed embed
+			output, _ := json.MarshalIndent(embed, "", "  ")
+			fmt.Println(string(output))
 
 			return nil
 		},

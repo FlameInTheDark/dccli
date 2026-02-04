@@ -74,9 +74,7 @@ func ConfigError(message string) *CLIError {
 
 // ConfigErrorf creates a formatted configuration error
 func ConfigErrorf(format string, args ...interface{}) *CLIError {
-	// Convert any %w verbs to %v for compatibility
-	format = convertFormatVerbs(format)
-	return NewError(fmt.Sprintf(format, args...), ExitConfigError)
+	return NewError(fmt.Errorf(format, args...).Error(), ExitConfigError)
 }
 
 // DiscordError creates a Discord API error
@@ -86,9 +84,7 @@ func DiscordError(message string) *CLIError {
 
 // DiscordErrorf creates a formatted Discord API error
 func DiscordErrorf(format string, args ...interface{}) *CLIError {
-	// Convert any %w verbs to %v for compatibility
-	format = convertFormatVerbs(format)
-	return NewError(fmt.Sprintf(format, args...), ExitDiscordError)
+	return NewError(fmt.Errorf(format, args...).Error(), ExitDiscordError)
 }
 
 // ValidationError creates a validation error
@@ -98,9 +94,7 @@ func ValidationError(message string) *CLIError {
 
 // ValidationErrorf creates a formatted validation error
 func ValidationErrorf(format string, args ...interface{}) *CLIError {
-	// Convert any %w verbs to %v for compatibility
-	format = convertFormatVerbs(format)
-	return NewError(fmt.Sprintf(format, args...), ExitValidationError)
+	return NewError(fmt.Errorf(format, args...).Error(), ExitValidationError)
 }
 
 // NotFoundError creates a not found error
@@ -110,7 +104,7 @@ func NotFoundError(resource string) *CLIError {
 
 // NotFoundErrorf creates a formatted not found error
 func NotFoundErrorf(format string, args ...interface{}) *CLIError {
-	return NewError(fmt.Sprintf(format, args...), ExitNotFound)
+	return NewError(fmt.Errorf(format, args...).Error(), ExitNotFound)
 }
 
 // WrapError wraps an error with a CLIError
@@ -154,11 +148,6 @@ func PrintError(err error) {
 	} else {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
-}
-
-// convertFormatVerbs converts %w verbs to %v for compatibility with fmt.Sprintf
-func convertFormatVerbs(format string) string {
-	return fmt.Sprintf("%s", format) // Simple pass-through, %w is handled by fmt
 }
 
 // IsCLIError checks if an error is a CLIError

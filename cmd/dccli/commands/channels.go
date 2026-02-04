@@ -559,6 +559,10 @@ func ChannelMessagesSendCommand() *cli.Command {
 				Usage: "Message content",
 			},
 			&cli.StringFlag{
+				Name:  "embed",
+				Usage: "JSON string containing embed data",
+			},
+			&cli.StringFlag{
 				Name:  "embed-file",
 				Usage: "JSON file containing embed data",
 			},
@@ -576,9 +580,11 @@ func ChannelMessagesSendCommand() *cli.Command {
 
 			channelID := c.String("channel")
 			content := c.String("content")
+			embedJSON := c.String("embed")
+			embedFile := c.String("embed-file")
 
-			if content == "" && c.String("embed-file") == "" {
-				return utils.ValidationError("either --content or --embed-file is required")
+			if content == "" && embedJSON == "" && embedFile == "" {
+				return utils.ValidationError("either --content, --embed, or --embed-file is required")
 			}
 
 			msg := &discordgo.MessageSend{
@@ -586,8 +592,21 @@ func ChannelMessagesSendCommand() *cli.Command {
 				TTS:     c.Bool("tts"),
 			}
 
-			// Load embed from file if provided
-			if embedFile := c.String("embed-file"); embedFile != "" {
+			// Load embed from string or file
+			if embedJSON != "" {
+				if err := json.Unmarshal([]byte(embedJSON), &msg.Embed); err != nil {
+					// Try to reconstruct JSON if it was split by shell
+					if c.Args().Len() > 0 {
+						if _, ok := utils.ReconstructJSON(embedJSON, c.Args().Slice(), &msg.Embed); ok {
+							fmt.Println("Warning: JSON argument appeared to be split by shell. Successfully reconstructed.")
+						} else {
+							return utils.ValidationErrorf("failed to parse embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+						}
+					} else {
+						return utils.ValidationErrorf("failed to parse embed JSON: %w (Hint: check shell quoting or use --embed-file)", err)
+					}
+				}
+			} else if embedFile != "" {
 				data, err := os.ReadFile(embedFile)
 				if err != nil {
 					return utils.ValidationErrorf("failed to read embed file: %w", err)
