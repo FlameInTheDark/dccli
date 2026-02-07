@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"syscall"
 
@@ -254,6 +255,10 @@ func MessagesSendCommand() *cli.Command {
 				Name:  "embed-file",
 				Usage: "JSON file containing embed data",
 			},
+			&cli.StringSliceFlag{
+				Name:  "file",
+				Usage: "Attach file(s) to the message",
+			},
 			&cli.BoolFlag{
 				Name:  "tts",
 				Usage: "Send as TTS message",
@@ -273,15 +278,42 @@ func MessagesSendCommand() *cli.Command {
 			content := c.String("content")
 			embedJSON := c.String("embed")
 			embedFile := c.String("embed-file")
+			files := c.StringSlice("file")
 
-			if content == "" && embedJSON == "" && embedFile == "" {
-				return utils.ValidationError("either --content, --embed, or --embed-file is required")
+			if content == "" && embedJSON == "" && embedFile == "" && len(files) == 0 {
+				return utils.ValidationError("either --content, --embed, --embed-file, or --file is required")
 			}
 
 			msg := &discordgo.MessageSend{
 				Content: content,
 				TTS:     c.Bool("tts"),
 			}
+
+			// Handle file attachments
+			var fileHandles []*os.File
+			if len(files) > 0 {
+				for _, file := range files {
+					f, err := os.Open(file)
+					if err != nil {
+						// Close already opened files
+						for _, fh := range fileHandles {
+							fh.Close()
+						}
+						return utils.ValidationErrorf("failed to open file %s: %w", file, err)
+					}
+					fileHandles = append(fileHandles, f)
+					msg.Files = append(msg.Files, &discordgo.File{
+						Name:   filepath.Base(file),
+						Reader: f,
+					})
+				}
+			}
+			// Ensure files are closed after sending
+			defer func() {
+				for _, f := range fileHandles {
+					f.Close()
+				}
+			}()
 
 			// Load embed from string or file
 			if embedJSON != "" {

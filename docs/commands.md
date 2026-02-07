@@ -177,7 +177,7 @@ Manage channel messages.
 ```bash
 dccli channels messages list <channel-id> [--limit 50]
 dccli channels messages get <channel-id> <message-id>
-dccli channels messages send <channel-id> --content <text> [--tts] [--embed <json>] [--embed-file <file>]
+dccli channels messages send <channel-id> --content <text> [--tts] [--embed <json>] [--embed-file <file>] [--file <path>...]
 dccli channels messages edit <channel-id> <message-id> --content <text>
 dccli channels messages delete <channel-id> <message-id> [--force]
 dccli channels messages bulk-delete <channel-id> --messages <id1,id2,...> [--force]
@@ -221,9 +221,10 @@ If `--format json` is used, messages will be printed as JSON objects.
 Send a message.
 
 ```bash
-dccli messages send <channel-id> --content <text> [--tts] [--embed <json>] [--embed-file <file>]
+dccli messages send <channel-id> --content <text> [--tts] [--embed <json>] [--embed-file <file>] [--file <path>...]
 ```
 For embed JSON format, see [Embeds Reference](embeds.md).
+You can attach multiple files by using the `--file` flag multiple times.
 
 ### messages validate-embed
 Validate embed JSON structure.
